@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException
 import sqlmodel
-import logging
+from pydantic import BaseModel
 from app.db import engine
 from app.models import Computer as ComputerModel
 
 
-class ComputerCreate(sqlmodel.SQLModel):
+class ComputerCreate(BaseModel):
     computer_number: str
     has_admin_password: bool
     admin_password: str | None = None
@@ -15,7 +15,7 @@ router = APIRouter()
 
 
 @router.get("/api/computers", response_model=list[ComputerModel])
-def get_computers():
+def _get_computers():
     with sqlmodel.Session(engine) as session:
         computers = session.exec(
             sqlmodel.select(ComputerModel).order_by(ComputerModel.id)
@@ -24,7 +24,7 @@ def get_computers():
 
 
 @router.post("/api/computers", response_model=ComputerModel)
-def create_computer(computer: ComputerCreate):
+def _create_computer(computer: ComputerCreate):
     with sqlmodel.Session(engine) as session:
         existing = session.exec(
             sqlmodel.select(ComputerModel).where(
@@ -44,7 +44,7 @@ def create_computer(computer: ComputerCreate):
 
 
 @router.delete("/api/computers/{computer_id}")
-def delete_computer(computer_id: int):
+def _delete_computer(computer_id: int):
     with sqlmodel.Session(engine) as session:
         computer = session.get(ComputerModel, computer_id)
         if not computer:

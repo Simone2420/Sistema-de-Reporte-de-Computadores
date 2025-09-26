@@ -12,9 +12,9 @@ class ComputerState(rx.State):
                 body = await response.json()
                 message = body.get("detail", "An unknown API error occurred.")
             except Exception as e:
-                logging.exception(f"Error: {e}")
+                logging.exception(f"API Error: {e}")
                 message = f"API Error: {response.status_code} {await response.text()}"
-            return rx.toast.error(message)
+            return rx.toast(message, duration=5000)
 
     @rx.event
     async def load_computers(self):
@@ -27,7 +27,7 @@ class ComputerState(rx.State):
     async def add_computer(self, form_data: dict):
         computer_number = form_data.get("computer_number")
         if not computer_number:
-            return rx.toast.error("Computer number cannot be empty.")
+            return rx.toast("Computer number cannot be empty.", duration=3000)
         has_admin_pass = form_data.get("has_admin_password") == "on"
         admin_password = form_data.get("admin_password")
         computer_data = {

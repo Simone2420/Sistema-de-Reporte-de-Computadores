@@ -63,7 +63,11 @@ def computer_table() -> rx.Component:
                                 class_name="px-6 py-4 whitespace-nowrap text-sm text-gray-500",
                             ),
                             rx.el.td(
-                                rx.cond(computer["admin_password"], "********", "N/A"),
+                                rx.cond(
+                                    computer["admin_password"] == None,
+                                    "N/A",
+                                    "********",
+                                ),
                                 class_name="px-6 py-4 whitespace-nowrap text-sm text-gray-500",
                             ),
                             rx.el.td(
@@ -73,7 +77,6 @@ def computer_table() -> rx.Component:
                                         computer["id"]
                                     ),
                                     class_name="text-red-600 hover:text-red-900",
-                                    variant="ghost",
                                 ),
                                 class_name="px-6 py-4 whitespace-nowrap text-right text-sm font-medium",
                             ),
@@ -113,6 +116,6 @@ app = rx.App(
             rel="stylesheet",
         ),
     ],
-    api=api_router,
 )
 app.add_page(index)
+app.api = api_router
