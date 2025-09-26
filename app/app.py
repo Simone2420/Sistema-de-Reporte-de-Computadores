@@ -2,6 +2,7 @@ import reflex as rx
 from app.states.computer_state import ComputerState
 from app.components.computer_form import computer_form
 from app.db import create_db_and_tables
+from app.api import router as api_router
 
 
 def computer_table() -> rx.Component:
@@ -27,6 +28,10 @@ def computer_table() -> rx.Component:
                             "Admin Password",
                             class_name="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
                         ),
+                        rx.el.th(
+                            "Actions",
+                            class_name="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider",
+                        ),
                     ),
                     class_name="bg-gray-50",
                 ),
@@ -35,22 +40,22 @@ def computer_table() -> rx.Component:
                         ComputerState.computers,
                         lambda computer: rx.el.tr(
                             rx.el.td(
-                                computer.id,
+                                computer["id"],
                                 class_name="px-6 py-4 whitespace-nowrap text-sm text-gray-500",
                             ),
                             rx.el.td(
-                                computer.computer_number,
+                                computer["computer_number"],
                                 class_name="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900",
                             ),
                             rx.el.td(
                                 rx.icon(
                                     tag=rx.cond(
-                                        computer.has_admin_password,
+                                        computer["has_admin_password"],
                                         "check_circle",
                                         "x_circle",
                                     ),
                                     class_name=rx.cond(
-                                        computer.has_admin_password,
+                                        computer["has_admin_password"],
                                         "text-green-500",
                                         "text-red-500",
                                     ),
@@ -58,8 +63,19 @@ def computer_table() -> rx.Component:
                                 class_name="px-6 py-4 whitespace-nowrap text-sm text-gray-500",
                             ),
                             rx.el.td(
-                                rx.cond(computer.admin_password, "********", "N/A"),
+                                rx.cond(computer["admin_password"], "********", "N/A"),
                                 class_name="px-6 py-4 whitespace-nowrap text-sm text-gray-500",
+                            ),
+                            rx.el.td(
+                                rx.el.button(
+                                    rx.icon(tag="trash_2", class_name="h-4 w-4"),
+                                    on_click=lambda: ComputerState.delete_computer(
+                                        computer["id"]
+                                    ),
+                                    class_name="text-red-600 hover:text-red-900",
+                                    variant="ghost",
+                                ),
+                                class_name="px-6 py-4 whitespace-nowrap text-right text-sm font-medium",
                             ),
                         ),
                     ),
@@ -97,5 +113,6 @@ app = rx.App(
             rel="stylesheet",
         ),
     ],
+    api=api_router,
 )
 app.add_page(index)

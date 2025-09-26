@@ -1,44 +1,48 @@
 import reflex as rx
-import sqlmodel
-from ..models import Computer
-from ..db import engine
+import logging
+from ..models import ComputerFrontendDict
 
 
 class ComputerState(rx.State):
-    computers: list[Computer] = []
-    computer_number: str = ""
-    has_admin_password: bool = False
-    admin_password: str = ""
+    computers: list[ComputerFrontendDict] = []
+
+    async def _handle_api_error(self, response):
+        if not response.ok:
+            try:
+                body = await response.json()
+                message = body.get("detail", "An unknown API error occurred.")
+            except Exception as e:
+                logging.exception(f"Error: {e}")
+                message = f"API Error: {response.status_code} {await response.text()}"
+            return rx.toast.error(message)
 
     @rx.event
-    def load_computers(self):
-        with sqlmodel.Session(engine) as session:
-            self.computers = session.exec(
-                sqlmodel.select(Computer).order_by(Computer.id)
-            ).all()
+    async def load_computers(self):
+        response = await self.get_api("/api/computers").get()
+        if not response.ok:
+            return await self._handle_api_error(response)
+        self.computers = await response.json()
 
     @rx.event
-    def add_computer(self):
-        if not self.computer_number:
+    async def add_computer(self, form_data: dict):
+        computer_number = form_data.get("computer_number")
+        if not computer_number:
             return rx.toast.error("Computer number cannot be empty.")
-        with sqlmodel.Session(engine) as session:
-            existing = session.exec(
-                sqlmodel.select(Computer).where(
-                    Computer.computer_number == self.computer_number
-                )
-            ).first()
-            if existing:
-                return rx.toast.error(
-                    f"Computer with number {self.computer_number} already exists."
-                )
-            new_computer = Computer(
-                computer_number=self.computer_number,
-                has_admin_password=self.has_admin_password,
-                admin_password=self.admin_password if self.has_admin_password else None,
-            )
-            session.add(new_computer)
-            session.commit()
-        self.computer_number = ""
-        self.has_admin_password = False
-        self.admin_password = ""
+        has_admin_pass = form_data.get("has_admin_password") == "on"
+        admin_password = form_data.get("admin_password")
+        computer_data = {
+            "computer_number": computer_number,
+            "has_admin_password": has_admin_pass,
+            "admin_password": admin_password if has_admin_pass else None,
+        }
+        response = await self.get_api("/api/computers").post(json=computer_data)
+        if not response.ok:
+            return await self._handle_api_error(response)
+        return ComputerState.load_computers
+
+    @rx.event
+    async def delete_computer(self, computer_id: int):
+        response = await self.get_api(f"/api/computers/{computer_id}").delete()
+        if not response.ok:
+            return await self._handle_api_error(response)
         return ComputerState.load_computers
